@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 320px;
+            height: 480px;
+            margin: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        canvas {
+            background-color: #70c5ce;
+            display: block;
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        .game-over h2 {
+            color: white;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        
+        .game-over p {
+            color: white;
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: #f1c40f;
+            border: none;
+            border-radius: 5px;
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #f39c12;
+        }
+        
+        .admin-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            width: 250px;
+        }
+        
+        .admin-toggle {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .admin-controls {
+            display: none;
+        }
+        
+        .admin-controls.show {
+            display: block;
+        }
+        
+        .admin-controls h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .control-group {
+            margin-bottom: 10px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .slider-control {
+            width: 100%;
+        }
+        
+        .toggle-control {
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-control input {
+            margin-right: 8px;
+        }
+        
+        .checkbox-control {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-control input {
+            margin-right: 8px;
+        }
+        
+        .admin-message {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #2ecc71;
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="game-canvas" width="320" height="480"></canvas>
+        <div class="score-display" id="score-display">0</div>
+        <div class="game-over" id="game-over">
+            <h2>Yah Kalah Cupu Lu🥱</h2>
+            <p id="final-score">Skor: 0</p>
+            <button class="btn" id="restart-btn">Maen Lagi Ah🤭</button>
+        </div>
+        <div class="instructions">
+            Klik atau tekan Spasi untuk terbang
+        </div>
+    </div>
+    
+    <div class="admin-panel">
+        <button class="admin-toggle" id="admin-toggle">Menu Ga penting koq😁</button>
+        <div class="admin-controls" id="admin-controls">
+            <h3>Kontrol Admin</h3>
+            
+            <div class="control-group">
+                <label for="gravity-control">Gravitasi:</label>
+                <input type="range" id="gravity-control" class="slider-control" min="0.1" max="1.5" step="0.1" value="0.5">
+                <span id="gravity-value">0.5</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="jump-control">Kekuatan Lompat:</label>
+                <input type="range" id="jump-control" class="slider-control" min="5" max="20" step="1" value="10">
+                <span id="jump-value">10</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="speed-control">Kecepatan Pipa:</label>
+                <input type="range" id="speed-control" class="slider-control" min="1" max="10" step="1" value="3">
+                <span id="speed-value">3</span>
+            </div>
+            
+            <div class="control-group">
+                <label for="pipe-gap-control">Jarak Pipa:</label>
+                <input type="range" id="pipe-gap-control" class="slider-control" min="100" max="250" step="10" value="150">
+                <span id="pipe-gap-value">150</span>
+            </div>
+            
+            <div class="control-group toggle-control">
+                <input type="checkbox" id="god-mode">
+                <label for="god-mode">God Mode (No Clip)</label>
+            </div>
+            
+            <div class="control-group toggle-control">
+                <input type="checkbox" id="invincible-mode">
+                <label for="invincible-mode">Mode Kebal</label>
+            </div>
+            
+            <div class="control-group">
+                <label for="score-control">Set Skor:</label>
+                <input type="number" id="score-control" min="0" value="0" style="width: 60px;">
+                <button id="set-score-btn">Set</button>
+            </div>
+            
+            <div class="control-group">
+                <button id="reset-game-btn">Reset Game</button>
+            </div>
+            
+            <div class="admin-message" id="admin-message"></div>
+        </div>
+    </div>
+
+    <script>
+        // Elemen DOM
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScore = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const adminToggle = document.getElementById('admin-toggle');
+        const adminControls = document.getElementById('admin-controls');
+        const adminMessage = document.getElementById('admin-message');
+        
+        // Kontrol admin
+        const gravityControl = document.getElementById('gravity-control');
+        const gravityValue = document.getElementById('gravity-value');
+        const jumpControl = document.getElementById('jump-control');
+        const jumpValue = document.getElementById('jump-value');
+        const speedControl = document.getElementById('speed-control');
+        const speedValue = document.getElementById('speed-value');
+        const pipeGapControl = document.getElementById('pipe-gap-control');
+        const pipeGapValue = document.getElementById('pipe-gap-value');
+        const godMode = document.getElementById('god-mode');
+        const invincibleMode = document.getElementById('invincible-mode');
+        const scoreControl = document.getElementById('score-control');
+        const setScoreBtn = document.getElementById('set-score-btn');
+        const resetGameBtn = document.getElementById('reset-game-btn');
+        
+        // Variabel game
+        let game = {
+            running: false,
+            score: 0,
+            gravity: 0.5,
+            jumpStrength: 10,
+            pipeSpeed: 3,
+            pipeGap: 150,
+            godModeEnabled: false,
+            invincibleModeEnabled: false
+        };
+        
+        // Posisi burung
+        let bird = {
+            x: 50,
+            y: canvas.height / 2,
+            width: 34,
+            height: 24,
+            velocity: 0,
+            rotation: 0
+        };
+        
+        // Pipa
+        let pipes = [];
+        let frameCount = 0;
+        let pipeInterval = 100; // Frame interval untuk membuat pipa baru
+        
+        // Gambar latar belakang dan burung (placeholder)
+        function drawBackground() {
+            ctx.fillStyle = '#70c5ce';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Tanah
+            ctx.fillStyle = '#dec387';
+            ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+            
+            // Pola tanah
+            ctx.fillStyle = '#c9ab6d';
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.fillRect(i, canvas.height - 80, 15, 5);
+            }
+        }
+        
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x + bird.width / 2, bird.y + bird.height / 2);
+            
+            // Rotasi berdasarkan velocity
+            let rotation = bird.velocity * 0.05;
+            if (rotation > 0.5) rotation = 0.5;
+            if (rotation < -0.5) rotation = -0.5;
+            ctx.rotate(rotation);
+            
+            // Tubuh burung (kuning)
+            ctx.fillStyle = '#ffdd59';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, bird.width / 2, bird.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mata
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(8, -5, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(10, -5, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Paruh
+            ctx.fillStyle = '#ff9f43';
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(25, -3);
+            ctx.lineTo(25, 3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Sayap
+            ctx.fillStyle = '#ffa502';
+            ctx.beginPath();
+            ctx.ellipse(-5, 5, 10, 6, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        function drawPipes() {
+            for (let pipe of pipes) {
+                // Pipa atas
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+                
+                // Pipa bawah
+                ctx.fillRect(pipe.x, pipe.top + pipe.gap, pipe.width, canvas.height - (pipe.top + pipe.gap));
+                
+                // Pinggiran pipa
+                ctx.fillStyle = '#27ae60';
+                ctx.fillRect(pipe.x - 2, pipe.top - 10, pipe.width + 4, 10);
+                ctx.fillRect(pipe.x - 2, pipe.top + pipe.gap, pipe.width + 4, 10);
+            }
+        }
+        
+        function updateBird() {
+            bird.velocity += game.gravity;
+            bird.y += bird.velocity;
+            
+            // Cek tabrakan dengan tanah
+            if (bird.y + bird.height >= canvas.height - 80) {
+                if (!game.invincibleModeEnabled) {
+                    gameOver();
+                } else {
+                    bird.y = canvas.height - 80 - bird.height;
+                    bird.velocity = 0;
+                }
+            }
+            
+            // Cek tabrakan dengan langit-langit
+            if (bird.y <= 0) {
+                bird.y = 0;
+                bird.velocity = 0;
+            }
+        }
+        
+        function updatePipes() {
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                let pipe = pipes[i];
+                pipe.x -= game.pipeSpeed;
+                
+                // Hapus pipa yang sudah lewat
+                if (pipe.x + pipe.width < 0) {
+                    pipes.splice(i, 1);
+                    continue;
+                }
+                
+                // Cek jika burung melewati pipa
+                if (pipe.x + pipe.width < bird.x && !pipe.passed) {
+                    pipe.passed = true;
+                    game.score++;
+                    scoreDisplay.textContent = game.score;
+                }
+                
+                // Cek tabrakan dengan pipa (kecuali God Mode aktif)
+                if (!game.godModeEnabled && !game.invincibleModeEnabled) {
+                    if (
+                        bird.x + bird.width > pipe.x &&
+                        bird.x < pipe.x + pipe.width &&
+                        (bird.y < pipe.top || bird.y + bird.height > pipe.top + pipe.gap)
+                    ) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            // Buat pipa baru
+            if (frameCount % pipeInterval === 0) {
+                createPipe();
+            }
+            
+            frameCount++;
+        }
+        
+        function createPipe() {
+            let top = Math.floor(Math.random() * (canvas.height - 200 - game.pipeGap)) + 50;
+            pipes.push({
+                x: canvas.width,
+                width: 50,
+                top: top,
+                gap: game.pipeGap,
+                passed: false
+            });
+        }
+        
+        function gameLoop() {
+            if (!game.running) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+            drawPipes();
+            drawBird();
+            
+            updateBird();
+            updatePipes();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function jump() {
+            bird.velocity = -game.jumpStrength;
+        }
+        
+        function gameOver() {
+            game.running = false;
+            finalScore.textContent = `Skor: ${game.score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        function resetGame() {
+            game.running = true;
+            game.score = 0;
+            bird.y = canvas.height / 2;
+            bird.velocity = 0;
+            pipes = [];
+            frameCount = 0;
+            
+            scoreDisplay.textContent = '0';
+            gameOverScreen.style.display = 'none';
+            
+            // Terapkan pengaturan dari admin panel
+            game.gravity = parseFloat(gravityControl.value);
+            game.jumpStrength = parseInt(jumpControl.value);
+            game.pipeSpeed = parseInt(speedControl.value);
+            game.pipeGap = parseInt(pipeGapControl.value);
+            game.godModeEnabled = godMode.checked;
+            game.invincibleModeEnabled = invincibleMode.checked;
+            
+            gameLoop();
+        }
+        
+        function showAdminMessage(message) {
+            adminMessage.textContent = message;
+            adminMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                adminMessage.style.display = 'none';
+            }, 2000);
+        }
+        
+        // Event listeners
+        canvas.addEventListener('click', () => {
+            if (game.running) {
+                jump();
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && game.running) {
+                jump();
+                e.preventDefault(); // Mencegah scroll halaman
+            }
+        });
+        
+        restartBtn.addEventListener('click', resetGame);
+        
+        adminToggle.addEventListener('click', () => {
+            adminControls.classList.toggle('show');
+        });
+        
+        gravityControl.addEventListener('input', () => {
+            gravityValue.textContent = gravityControl.value;
+            if (game.running) {
+                game.gravity = parseFloat(gravityControl.value);
+            }
+        });
+        
+        jumpControl.addEventListener('input', () => {
+            jumpValue.textContent = jumpControl.value;
+            if (game.running) {
+                game.jumpStrength = parseInt(jumpControl.value);
+            }
+        });
+        
+        speedControl.addEventListener('input', () => {
+            speedValue.textContent = speedControl.value;
+            if (game.running) {
+                game.pipeSpeed = parseInt(speedControl.value);
+            }
+        });
+        
+        pipeGapControl.addEventListener('input', () => {
+            pipeGapValue.textContent = pipeGapControl.value;
+            if (game.running) {
+                game.pipeGap = parseInt(pipeGapControl.value);
+            }
+        });
+        
+        godMode.addEventListener('change', () => {
+            if (game.running) {
+                game.godModeEnabled = godMode.checked;
+                showAdminMessage(`God Mode ${godMode.checked ? 'diaktifkan' : 'dinonaktifkan'}`);
+            }
+        });
+        
+        invincibleMode.addEventListener('change', () => {
+            if (game.running) {
+                game.invincibleModeEnabled = invincibleMode.checked;
+                showAdminMessage(`Mode Kebal ${invincibleMode.checked ? 'diaktifkan' : 'dinonaktifkan'}`);
+            }
+        });
+        
+        setScoreBtn.addEventListener('click', () => {
+            let newScore = parseInt(scoreControl.value);
+            if (!isNaN(newScore) && newScore >= 0) {
+                game.score = newScore;
+                scoreDisplay.textContent = game.score;
+                showAdminMessage(`Skor diubah menjadi ${newScore}`);
+            }
+        });
+        
+        resetGameBtn.addEventListener('click', resetGame);
+        
+        // Inisialisasi game
+        resetGame();
+    </script>
+</body>
+</html>
